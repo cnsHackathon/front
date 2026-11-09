@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { mockEnabled, request } from './api.js';
 import { useVoice } from './voice.js';
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+import '@fontsource/black-han-sans/400.css';
+import '@fontsource-variable/noto-serif-kr';
 import './style.css';
 
 const notice = '연습에서는 주민번호, 계좌번호, 카드번호, 비밀번호 등 실제 개인정보를 말하지 마세요.';
@@ -20,18 +23,27 @@ function PhoneIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 3H4.8A1.8 1.8 0 0 0 3 4.9 17.5 17.5 0 0 0 19.1 21a1.8 1.8 0 0 0 1.9-1.8V17l-5-2-1.5 2a13 13 0 0 1-7.5-7.5L9 8 7 3Z" /></svg>;
 }
 
+function CallPortrait({ self = false }) {
+  return <figure className={'call-portrait ' + (self ? 'self' : 'suspect')}>
+    <span className="call-portrait-image" aria-hidden="true" />
+    <figcaption>{self ? '나' : '보이스피싱범'}</figcaption>
+  </figure>;
+}
+
 function CallPreview() {
   return <div className="hero-art" aria-hidden="true">
     <div className="orbit orbit-outer" /><div className="orbit orbit-inner" />
     <div className="preview-phone">
-      <div className="preview-top"><span>안심콜</span><span>● ● ●</span></div>
-      <div className="preview-avatar"><PhoneIcon /></div>
-      <strong>발신자 정보 없음</strong>
-      <span className="preview-caption">모의 전화 수신 중</span>
-      <div className="wave">{[12, 23, 17, 34, 45, 24, 39, 28, 42, 20, 30, 14, 21, 9].map((height, index) => <i key={index} style={{ height }} />)}</div>
-      <div className="preview-answer"><PhoneIcon /> 전화 받기</div>
+      <span className="preview-island" />
+      <div className="preview-caller">
+        <div className="preview-avatar"><PhoneIcon /></div>
+        <strong>알 수 없는 발신자</strong>
+        <span className="preview-caption">수신 전화</span>
+      </div>
+      <div className="wave">{[12, 23, 17, 34, 45, 24, 39, 28, 42, 20, 30, 14, 21, 9].map((height, index) => <i key={index} style={{ height: (height / 45) * 100 + '%' }} />)}</div>
+      <div className="preview-answer"><PhoneIcon /><span>받기</span></div>
+      <span className="preview-home" />
     </div>
-
   </div>;
 }
 
@@ -250,6 +262,7 @@ function App() {
     setMode('speaking');
     state.pending = true;
     setConversation([session.firstTurn]);
+    voice.unlockAudio();
     const firstAudio = voice.speak(session.firstTurn.text, session.firstTurn.speaker);
     try {
       const start = await request('POST', endpoint('start'));
@@ -315,12 +328,14 @@ function App() {
     if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
   }, [conversation, voice.text, mode]);
 
-  return <main>
+  return <main className={page === 2 ? "receiving" : page === 3 ? "in-call" : undefined}>
     <header className="site-head">
       <div className="brand"><span className="brand-icon"><PhoneIcon /></span><span>안심콜</span></div>
       <span className="badge"><span className="status-dot" />{mockEnabled ? '모의 체험' : '서버 연결'}</span>
     </header>
     <nav aria-label="체험 단계" className="steps">{steps.map((name, i) => <span className={i === page ? 'current' : i < page ? 'complete' : ''} aria-current={i === page ? 'step' : undefined} key={name}><b>{i < page ? '✓' : i + 1}</b>{name}</span>)}</nav>
+    <div className={page === 3 ? "call-scene" : "page-content"}>
+    {page === 3 && <CallPortrait />}
     <article ref={panel} className={'panel page-' + page}>
       {page === 3 && <aside className="notice">{notice}</aside>}
       {page === 0 && <>
@@ -370,6 +385,8 @@ function App() {
       {page === 4 && <><h1 tabIndex={-1}>대응 리포트</h1>{report ? <Report report={report} onReset={reset} /> : busy ? <div className="report-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>대화를 분석하고 있어요</strong><p>잠시 후 대응 점수와 피드백을 볼 수 있어요.</p></div></div> : null}</>}
       {error && <div className="error" role="alert">{error} {retry && <button className="quiet" disabled={busy} onClick={retry}>재시도</button>}</div>}
     </article>
+    {page === 3 && <CallPortrait self />}
+    </div>
 
   </main>;
 }

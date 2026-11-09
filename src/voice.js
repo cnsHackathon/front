@@ -5,6 +5,7 @@ const Recognition = window.SpeechRecognition ?? window.webkitSpeechRecognition;
 export function useVoice() {
   const input = useRef(null);
   const playback = useRef(null);
+  const audioContext = useRef(null);
   const voices = useRef([]);
   const [text, setText] = useState('');
 
@@ -81,7 +82,7 @@ export function useVoice() {
     window.speechSynthesis?.cancel();
   }
 
-  function speak(text, speaker) {
+  function speakWithBrowser(text, speaker) {
     stopSpeaking();
     if (!window.speechSynthesis || !text) return Promise.resolve();
     const sentences = text.match(/[^.!?。！？]+[.!?。！？]*/g) ?? [text];
@@ -112,6 +113,71 @@ export function useVoice() {
     });
   }
 
+  function unlockAudio() {
+    const AudioContext = window.AudioContext ?? window.webkitAudioContext;
+    if (!AudioContext) return;
+    audioContext.current ??= new AudioContext();
+    audioContext.current.resume().catch(() => {});
+  }
+
+  function speak(text, speaker) {
+    stopSpeaking();
+    if (!text) return Promise.resolve();
+    const context = audioContext.current;
+    if (!context || context.state === 'closed') return speakWithBrowser(text, speaker);
+
+    return new Promise(resolve => {
+      const controller = new AbortController();
+      let source;
+      let stopped = false;
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
+      function finish() {
+        clearTimeout(timeout);
+        if (playback.current === cancel) playback.current = null;
+        resolve();
+      }
+
+      playback.current = () => {
+        stopped = true;
+        controller.abort();
+        source?.stop();
+        clearTimeout(timeout);
+        resolve();
+      };
+      const cancel = playback.current;
+      async function play() {
+        try {
+          const response = await fetch('/local-tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, voice: speaker === 'B' ? 'F2' : 'M1', lang: 'ko', speed: 1.02 }),
+            signal: controller.signal,
+          });
+          if (!response.ok || !response.headers.get('content-type')?.startsWith('audio/')) {
+            throw new Error('Local TTS unavailable');
+          }
+          const buffer = await context.decodeAudioData(await response.arrayBuffer());
+          if (stopped) return;
+          if (context.state !== 'running') throw new Error('Audio playback blocked');
+          clearTimeout(timeout);
+          source = context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(context.destination);
+          source.onended = finish;
+          source.start();
+        } catch {
+          if (stopped) return;
+          if (playback.current === cancel) playback.current = null;
+          clearTimeout(timeout);
+          await speakWithBrowser(text, speaker);
+          resolve();
+        }
+      }
+      play();
+    });
+  }
+
   useEffect(() => {
     const synth = window.speechSynthesis;
     const refresh = () => { voices.current = synth?.getVoices().filter(voice => /^ko\b/i.test(voice.lang)) ?? []; };
@@ -121,8 +187,9 @@ export function useVoice() {
       synth?.removeEventListener('voiceschanged', refresh);
       input.current?.cancel();
       stopSpeaking();
+      audioContext.current?.close().catch(() => {});
     };
   }, []);
 
-  return { text, listen, stopListening, speak, stopSpeaking, supported: !!Recognition };
+  return { text, listen, stopListening, speak, stopSpeaking, unlockAudio, supported: !!Recognition };
 }

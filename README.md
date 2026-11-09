@@ -24,3 +24,7 @@ BACKEND_URL=http://localhost:8080
 FE-1은 `src/api.js`와 앱 흐름·리포트, FE-2는 프로필·전화 수신, FE-3은 통화 상태·타이머, FE-4는 `src/voice.js`에 있습니다. 실제 서버의 firstTurn, 턴 응답, 종료·재시도 동작은 연동 전에 명세를 확정해야 합니다.
 
 `run-local.ps1` can also start the app using the bundled Codex Node runtime when the system Node version is older than 18.
+
+## 한국어 TTS
+
+별도 PowerShell 창에서 `.\run-tts.ps1`을 실행합니다. Python 3.10 이상 또는 Codex 번들 Python을 사용하며 첫 실행 시 Supertonic 3 모델(약 400MB)을 받습니다. 서비스가 준비되면 Chrome에서 체험을 시작하세요. 발화는 로컬 서버에서 합성하고 API 키나 호출 비용은 없습니다. 로컬 엔진이 꺼져 있으면 브라우저 음성으로 재생합니다.
