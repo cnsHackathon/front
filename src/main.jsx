@@ -19,8 +19,13 @@ const callHints = {
 };
 const steps = ['안내', '프로필', '전화 수신', '통화', '리포트'];
 
-function PhoneIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 3H4.8A1.8 1.8 0 0 0 3 4.9 17.5 17.5 0 0 0 19.1 21a1.8 1.8 0 0 0 1.9-1.8V17l-5-2-1.5 2a13 13 0 0 1-7.5-7.5L9 8 7 3Z" /></svg>;
+function BrandMark() {
+  return <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 2.5 21 6v5.4c0 4.7-3.6 8.1-9 10.1-5.4-2-9-5.4-9-10.1V6l9-3.5Z"
+      fill="currentColor" fillOpacity=".12" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    <path d="M8.3 7.3c-.8 0-1.4.6-1.4 1.4 0 4.4 3.7 8.1 8.1 8.1.8 0 1.4-.6 1.4-1.4v-1.3l-2.6-1.2-1 1.1a7 7 0 0 1-3.1-3.1l1.1-1-1.2-2.6H8.3Z"
+      fill="currentColor" />
+  </svg>;
 }
 
 function CallPortrait({ self = false }) {
@@ -99,9 +104,9 @@ function Profile({ onSubmit, onBack, busy, profile }) {
 }
 
 const responseSteps = [
-  ['통화 종료', '상대의 요구를 듣고 일단 전화를 끊어요.'],
-  ['송금 보류', '확인하기 전에는 돈을 보내지 않아요.'],
-  ['대표번호 확인', '기관의 공식 대표번호를 직접 찾아 전화해요.'],
+  ['통화 종료', '일단 전화를 끊어요.'],
+  ['송금 보류', '확인 전에는 돈을 보내지 않아요.'],
+  ['대표번호 확인', '공식 번호를 찾아 직접 전화해요.'],
 ];
 
 function Report({ report, onReset }) {
@@ -134,23 +139,25 @@ function Report({ report, onReset }) {
       <ul>{report.relatedScamTypes.map((type, index) => <li key={index}>{types[type] ?? type}</li>)}</ul>
     </section>}
 
-    <details className="report-details">
-      <summary>통화 상세 보기</summary>
-      {report.summary && <p>{report.summary}</p>}
-      {bad && <section>
-        <h3>피해 발생 시점{report.scammedTurn != null && ' · ' + report.scammedTurn + '번째 답변'}</h3>
-        {report.scammedAction && <p>{report.scammedAction}</p>}
-        {evidence && <blockquote>“{evidence.quote}”<small>{evidence.why}</small></blockquote>}
-      </section>}
-      {!bad && moments('위험 신호', report.riskyMoments)}
-      {!bad && moments('잘한 대응', report.goodMoments)}
-      {!!report.realWorldTips?.length && <section>
-        <h3>추가 대응 요령</h3>
-        <ul>{report.realWorldTips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>
-      </section>}
-    </details>
+    <div className="report-footer">
+      <details className="report-details">
+        <summary>통화 상세 보기</summary>
+        {report.summary && <p>{report.summary}</p>}
+        {bad && <section>
+          <h3>피해 발생 시점{report.scammedTurn != null && ' · ' + report.scammedTurn + '번째 답변'}</h3>
+          {report.scammedAction && <p>{report.scammedAction}</p>}
+          {evidence && <blockquote>“{evidence.quote}”<small>{evidence.why}</small></blockquote>}
+        </section>}
+        {!bad && moments('위험 신호', report.riskyMoments)}
+        {!bad && moments('잘한 대응', report.goodMoments)}
+        {!!report.realWorldTips?.length && <section>
+          <h3>추가 대응 요령</h3>
+          <ul>{report.realWorldTips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>
+        </section>}
+      </details>
 
-    <div className="report-actions"><button onClick={onReset}>처음으로</button></div>
+      <div className="report-actions"><button onClick={onReset}>처음으로</button></div>
+    </div>
   </div>;
 }
 
@@ -383,7 +390,7 @@ function App() {
 
   return <main className={page === 2 ? "receiving" : page === 3 ? "in-call" : page === 4 ? "viewing-report" : undefined}>
     <header className="site-head">
-      <div className="brand"><span className="brand-icon"><PhoneIcon /></span><span>안심콜</span></div>
+      <div className="brand"><span className="brand-icon"><BrandMark /></span><span>안심콜</span></div>
       <span className="badge"><span className="status-dot" />{mockEnabled ? '모의 체험' : '서버 연결'}</span>
     </header>
     <nav aria-label="체험 단계" className="steps">{steps.map((name, i) => <span className={i === page ? 'current' : i < page ? 'complete' : ''} aria-current={i === page ? 'step' : undefined} key={name}><b>{i < page ? '✓' : i + 1}</b>{name}</span>)}</nav>
