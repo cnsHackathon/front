@@ -401,12 +401,14 @@ function App() {
       {page === 0 && <>
         <div className="hero">
           <div className="hero-copy">
-
-            <h1>수상한 전화,<br />어떻게 <em>답할까?</em></h1>
-            <p className="intro">모의 보이스피싱 전화에 답해 보세요. 통화 후 대응 결과를 알려드려요.</p>
-            <aside className="notice"><strong>체험 전 확인</strong><span>{notice}</span></aside>
-            <button className="hero-start" onClick={() => setPage(1)}>체험 시작 <span aria-hidden="true">→</span></button>
-
+            <div className="hero-heading">
+              <h1>수상한 전화,<br />어떻게 <em>답할까?</em></h1>
+              <p className="intro">모의 보이스피싱 전화에 답해 보세요. 통화 후 대응 결과를 알려드려요.</p>
+            </div>
+            <div className="hero-actions">
+              <aside className="notice"><strong>체험 전 확인</strong><span>{notice}</span></aside>
+              <button className="hero-start" onClick={() => setPage(1)}>체험 시작 <span aria-hidden="true">→</span></button>
+            </div>
           </div>
           <CallPreview />
         </div>
