@@ -30,18 +30,31 @@ function CallPortrait({ self = false }) {
   </figure>;
 }
 
+function CallHandset() {
+  return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 2.8c.6-.2 1.2.1 1.5.7l2.2 4.3c.3.6.1 1.3-.4 1.7l-1.7 1.4a15 15 0 0 0 4.9 4.9l1.4-1.7c.4-.5 1.1-.7 1.7-.4l4.3 2.2c.6.3.9.9.7 1.5l-.5 2.3c-.2 1-1.1 1.6-2.1 1.6C10 21 3 14 2.7 5.4c0-1 .6-1.9 1.6-2.1l2.3-.5Z" /></svg>;
+}
+
+function CallerAvatar() {
+  return <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <circle cx="12" cy="7.5" r="4" />
+    <path d="M4 21v-1.3c0-3.7 3.6-6.2 8-6.2s8 2.5 8 6.2V21H4Z" />
+  </svg>;
+}
+
 function CallPreview() {
   return <div className="hero-art" aria-hidden="true">
     <div className="orbit orbit-outer" /><div className="orbit orbit-inner" />
     <div className="preview-phone">
       <span className="preview-island" />
       <div className="preview-caller">
-        <div className="preview-avatar"><PhoneIcon /></div>
+        <div className="preview-avatar"><CallerAvatar /></div>
         <strong>알 수 없는 발신자</strong>
         <span className="preview-caption">수신 전화</span>
       </div>
-      <div className="wave">{[12, 23, 17, 34, 45, 24, 39, 28, 42, 20, 30, 14, 21, 9].map((height, index) => <i key={index} style={{ height: (height / 45) * 100 + '%' }} />)}</div>
-      <div className="preview-answer"><PhoneIcon /><span>받기</span></div>
+      <div className="preview-controls">
+        <div className="preview-choice decline"><span><CallHandset /></span>거절</div>
+        <div className="preview-choice accept"><span><CallHandset /></span>받기</div>
+      </div>
       <span className="preview-home" />
     </div>
   </div>;
@@ -85,20 +98,60 @@ function Profile({ onSubmit, onBack, busy, profile }) {
   </form>;
 }
 
+const responseSteps = [
+  ['통화 종료', '상대의 요구를 듣고 일단 전화를 끊어요.'],
+  ['송금 보류', '확인하기 전에는 돈을 보내지 않아요.'],
+  ['대표번호 확인', '기관의 공식 대표번호를 직접 찾아 전화해요.'],
+];
+
 function Report({ report, onReset }) {
   const bad = report.result === 'SCAMMED';
   const evidence = report.riskyMoments?.find(moment => moment.turn === report.scammedTurn);
-  const moments = (title, list) => !!list?.length && <section><h3>{title}</h3>{list.map((moment, index) => <blockquote key={index}>“{moment.quote}”<small>{moment.why}</small></blockquote>)}</section>;
-  return <>
-    <div className={'score ' + (bad ? 'bad' : '')}><span>{bad ? '모의 사기에 당했어요' : '모의 사기에 당하지 않았어요'}</span><strong>{report.score}<small> / 100점</small></strong></div>
-    <p>{report.summary}</p>
-    {bad && <section><h3>{report.scammedTurn}번째 턴에서 당했어요</h3><p>{report.scammedAction}</p>{evidence && <blockquote>“{evidence.quote}”<small>{evidence.why}</small></blockquote>}</section>}
-    {!bad && moments('이 부분은 위험했어요', report.riskyMoments)}
-    {!bad && moments('이 부분은 잘 대처했어요', report.goodMoments)}
-    {!!report.realWorldTips?.length && <section><h3>실제 통화에서 기억할 점</h3><ul>{report.realWorldTips.map(tip => <li key={tip}>{tip}</li>)}</ul></section>}
-    {!!report.relatedScamTypes?.length && <section><h3>관련 사기 유형</h3><p>{report.relatedScamTypes.map(type => types[type] ?? type).join(' · ')}</p></section>}
-    <button onClick={onReset}>처음으로</button>
-  </>;
+  const moments = (title, list) => !!list?.length && (
+    <section>
+      <h3>{title}</h3>
+      {list.map((moment, index) => <blockquote key={index}>“{moment.quote}”<small>{moment.why}</small></blockquote>)}
+    </section>
+  );
+
+  return <div className="report-content">
+    <div className={'score ' + (bad ? 'bad' : 'safe')}>
+      <div><h2>{bad ? '모의 피해 발생' : '모의 피해 없음'}</h2></div>
+      <strong>{report.score}<small> / 100점</small></strong>
+    </div>
+
+    <section className="report-steps" aria-labelledby="response-steps-title">
+      <h2 id="response-steps-title">핵심 대응 요령</h2>
+      <ol>
+        {responseSteps.map(([keyword, description]) => (
+          <li key={keyword}><strong>{keyword}</strong><p>{description}</p></li>
+        ))}
+      </ol>
+    </section>
+
+    {!!report.relatedScamTypes?.length && <section className="report-types">
+      <h2>관련 사기 유형</h2>
+      <ul>{report.relatedScamTypes.map((type, index) => <li key={index}>{types[type] ?? type}</li>)}</ul>
+    </section>}
+
+    <details className="report-details">
+      <summary>통화 상세 보기</summary>
+      {report.summary && <p>{report.summary}</p>}
+      {bad && <section>
+        <h3>피해 발생 시점{report.scammedTurn != null && ' · ' + report.scammedTurn + '번째 답변'}</h3>
+        {report.scammedAction && <p>{report.scammedAction}</p>}
+        {evidence && <blockquote>“{evidence.quote}”<small>{evidence.why}</small></blockquote>}
+      </section>}
+      {!bad && moments('위험 신호', report.riskyMoments)}
+      {!bad && moments('잘한 대응', report.goodMoments)}
+      {!!report.realWorldTips?.length && <section>
+        <h3>추가 대응 요령</h3>
+        <ul>{report.realWorldTips.map((tip, index) => <li key={index}>{tip}</li>)}</ul>
+      </section>}
+    </details>
+
+    <div className="report-actions"><button onClick={onReset}>처음으로</button></div>
+  </div>;
 }
 
 function App() {
@@ -328,7 +381,7 @@ function App() {
     if (transcript.current) transcript.current.scrollTop = transcript.current.scrollHeight;
   }, [conversation, voice.text, mode]);
 
-  return <main className={page === 2 ? "receiving" : page === 3 ? "in-call" : undefined}>
+  return <main className={page === 2 ? "receiving" : page === 3 ? "in-call" : page === 4 ? "viewing-report" : undefined}>
     <header className="site-head">
       <div className="brand"><span className="brand-icon"><PhoneIcon /></span><span>안심콜</span></div>
       <span className="badge"><span className="status-dot" />{mockEnabled ? '모의 체험' : '서버 연결'}</span>
@@ -343,7 +396,7 @@ function App() {
           <div className="hero-copy">
 
             <h1>수상한 전화,<br />어떻게 <em>답할까?</em></h1>
-            <p className="intro">모의 보이스피싱 전화에 직접 답해 보세요. 통화가 끝나면 내가 잘 대처한 순간과 놓친 신호를 알려드려요.</p>
+            <p className="intro">모의 보이스피싱 전화에 답해 보세요. 통화 후 대응 결과를 알려드려요.</p>
             <aside className="notice"><strong>체험 전 확인</strong><span>{notice}</span></aside>
             <button className="hero-start" onClick={() => setPage(1)}>체험 시작 <span aria-hidden="true">→</span></button>
 
@@ -357,15 +410,15 @@ function App() {
         <div className="incoming">
           <span className="incoming-notch" aria-hidden="true" />
           <div className="caller">
-            <div className="phone"><PhoneIcon /></div>
+            <div className="phone"><CallerAvatar /></div>
             <h1 tabIndex={-1}>알 수 없는 발신자</h1>
             <p role="status">{session ? '수신 전화' : busy ? '전화 연결 중…' : '전화를 준비하지 못했어요.'}</p>
           </div>
           <div className="incoming-controls">
             <button className="ringer" aria-pressed={!ringing} onClick={ringing ? stopRing : startRing}>{ringing ? '무음으로 전환' : '벨소리 켜기'}</button>
             <div className="call-options">
-              <button className="call-choice decline" disabled={busy} onClick={backToProfile}><span><PhoneIcon /></span>거절</button>
-              <button className="call-choice accept" disabled={!session || busy} onClick={accept}><span><PhoneIcon /></span>받기</button>
+              <button className="call-choice decline" disabled={busy} onClick={backToProfile}><span><CallHandset /></span>거절</button>
+              <button className="call-choice accept" disabled={!session || busy} onClick={accept}><span><CallHandset /></span>받기</button>
             </div>
           </div>
           <span className="incoming-home" aria-hidden="true" />
@@ -382,7 +435,7 @@ function App() {
         {mode === 'review' && <>{voice.supported && <button className="quiet" onClick={record}>다시 말하기</button>}<button disabled={!draft.trim() || !!retry} onClick={() => send(draft)}>보내기</button></>}
         <button className="danger" onClick={hangUp}>통화 끊기</button>
       </div></>}
-      {page === 4 && <><h1 tabIndex={-1}>대응 리포트</h1>{report ? <Report report={report} onReset={reset} /> : busy ? <div className="report-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>대화를 분석하고 있어요</strong><p>잠시 후 대응 점수와 피드백을 볼 수 있어요.</p></div></div> : null}</>}
+      {page === 4 && <><h1 tabIndex={-1}>체험 결과</h1>{report ? <Report report={report} onReset={reset} /> : busy ? <div className="report-loading" role="status"><span className="spinner" aria-hidden="true" /><div><strong>대화를 분석하고 있어요</strong><p>잠시 후 대응 점수와 피드백을 볼 수 있어요.</p></div></div> : null}</>}
       {error && <div className="error" role="alert">{error} {retry && <button className="quiet" disabled={busy} onClick={retry}>재시도</button>}</div>}
     </article>
     {page === 3 && <CallPortrait self />}
